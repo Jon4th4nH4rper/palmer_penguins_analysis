@@ -1,0 +1,233 @@
+---
+title: "reproducible_research_q2"
+output: html_notebook
+---
+### Introduction
+
+## In this analysis, the Palmer Penguins dataset - which contains a variety of physiological as well as geographical information on three penguin species; Adelie Penguin (Pygoscelis adeliae), Gentoo penguin (Pygoscelis papua) and Chinstrap penguin (Pygoscelis antarctica). In this study I endevoured to explore the possible relationship between the morphological variables culmen length and culmen depth across these three species. The dimensions of the culmen has significant implications to the ecology of the penguin as this will impact feeding behaviour and niche of these birds. Existing relationships between culmen length and depth could infer upon such feeding ecology as well as indicate functional constraint in morphospace. For this reason this study aims to identify a possible correlative relationship between culmen length and depth.
+
+# First I install and load the required packages:
+
+```{r Data Exploration}
+
+install.packages(c("ggplot2", "palmerpenguins", "janitor", "dplyr", "cowplot"))
+
+```
+
+```{r}
+
+library(ggplot2)
+library(palmerpenguins)
+library(janitor)
+library(dplyr)
+library(cowplot)
+
+```
+
+
+# Second I load and clean the data set using functions from my cleaning.r file.
+
+# The function write.csv is used to upload a csv file copy of the penguins_raw dataset to my data folder. I then use the function clean_column_names to convert the column names in the data set into a format that is conducive to being used in R. The resultant file is saved as penguins_clean.csv into the data folder allowing the relevant changes to the data set to be observed transparently.
+
+# I use the function subset_columns to subset the penguins_clean dataset for the variables I am interested in, these being species, culmen length and culmen depth. This produces a subsetted dataset called subset_data_results that is saved once again as a csv file to my data folder to aid in transparently showing how the data has been handled. I believe this is useful for transparency, as well as producing a copy of the dataset that could be exported to other software easily for use by other researchers.
+
+# Next I employ a function called filter_data, that unlike subset_columns, separates out the data set by the identities of specific rows and compiles them into their own filtered data set. Here I use this to separate out my subdivided data set into three smaller data sets for each of the species of penguin. This provides me with three species specific data sets that contain only the variables I am interested in (culmen length and culmen depth). In addition to this, my filter_data function removes all NA data entries by nesting the remove_NA function and then uploading this filtered data set as it's own csv file, the name of which is specified when the filter function is called, to the data folder. I use this function to create all three data sets.
+
+```{r Data cleaning and organizing}
+
+source("functions/cleaning.r")
+
+write.csv(penguins_raw, "data/penguins_raw.csv")
+
+penguins_clean <- clean_column_names(penguins_raw)
+
+subset_data_results <- subset_columns(penguins_clean, c("species", "culmen_length_mm", "culmen_depth_mm"))
+
+Gentoo_dataset <- filter_data(
+  subset_data_results,
+  list(species = ("Gentoo penguin (Pygoscelis papua)")),
+  "data/",
+  "Gentoo_data"
+)
+
+Adelie_dataset <- filter_data(
+  subset_data_results,
+  list(species = ("Adelie Penguin (Pygoscelis adeliae)")),
+  "data/",
+  "Adelie_data"
+)
+
+Chinstrap_dataset <- filter_data(
+  subset_data_results,
+  list(species = ("Chinstrap penguin (Pygoscelis antarctica)")),
+  "data/",
+  "Chinstrap_data"
+)
+
+```
+
+# Now that I have successfully cleaned and subdivided the penguins_raw data set to three smaller data sets, one for each species, I can look at exploring the data. Here I use an exploratory scatter plot function to look for evidence of correlation that I can then statisically interrogate later.
+
+# I use a function called exp_chinstrap_plot to perform the same graphical procedure on each and produce the following plots as seen below.
+
+```{r}
+source("functions/illustration.r")
+
+exp_chinstrap_plot <- exp_create_scatter_plot(Chinstrap_dataset, "culmen_length_mm", "culmen_depth_mm", "species", 
+                    "Scatter Plot of Chinstrap Culmen Length vs. Culmen Depth", 
+                    "Culmen Length (mm)", "Culmen Depth (mm)", "species",
+                    label_width = 30, strip_text_size = 10.5, strip_text_hjust = 0.5, strip_text_margin = 4,
+                    point_size = 1, facet_ncol = 5)
+
+exp_gentoo_plot <- exp_create_scatter_plot(Gentoo_dataset, "culmen_length_mm", "culmen_depth_mm", "species", 
+                    "Scatter Plot of Gentoo Culmen Length vs. Culmen Depth", 
+                    "Culmen Length (mm)", "Culmen Depth (mm)", "species",
+                    label_width = 30, strip_text_size = 10.5, strip_text_hjust = 0.5, strip_text_margin = 4,
+                    point_size = 1, facet_ncol = 5)
+
+exp_adelie_plot <- exp_create_scatter_plot(Adelie_dataset, "culmen_length_mm", "culmen_depth_mm", "species", 
+                    "Scatter Plot of Adelie Culmen Length vs. Culmen Depth", 
+                    "Culmen Length (mm)", "Culmen Depth (mm)", "species",
+                    label_width = 30, strip_text_size = 10.5, strip_text_hjust = 0.5, strip_text_margin = 4,
+                    point_size = 1, facet_ncol = 5)
+```
+
+# After creating a plot of culmen length versus culmen depth for each species, I use my figure saving function save_ggplot to save each of these exploratory figures to my figures folder. I specify saving these in a pdf format as this prevents the graphs from distorting when being uploaded or viewed elsewhere and at different magnifications improving their transparency and accessibility. The type of saved file can be changed, for example to png, by changing the filename of the figure when the function is called. This provides a level of flexibility to the figures in case they needed to be used for different purposes such as in a presentation or paper.
+
+```{r}
+save_ggplot(exp_gentoo_plot, "exp_gentoo_plot.pdf", "figures/")
+save_ggplot(exp_chinstrap_plot, "exp_chinstrap_plot.pdf", "figures/")
+save_ggplot(exp_adelie_plot, "exp_adelie_plot.pdf", "figures/")
+```
+
+### Hypothesis:
+
+# Looking at my exploratory plots it is apparent that a positive correlation exists between culmen length and culmen depth within each penguins species. Hence my null hypothesis is that there is no statistically significant correlation between culmen length and culmen depth within the penguin species Gentoo, Adelie amd Chinstrap. My alternate hypothesis is that there is a statistically significant correlation between culmen length and culmen depth within the penguin species Gentoo, Adelie and Chinstrap.
+
+### Statistical Methods
+
+# In order to determine whether there is a significant correlation between culmen length and culmen depth I used functions I created to perform a pearson's product moment correlation test by species on my chosen variables to provide a general indication as to whether there was correlation at all, as well as a linear regression to determine the predictive capacity of culmen length on culmen depth and provide a higher confidence interrogation of this relationship.
+
+# For each penguin species I used a function called correlation_test_by_species that would take my Gentoo data set and perform a pearson's rank correlation test. The results of this test are then printed once performed and this is contained within the function.
+
+# Similarly, I performed a linear regression test on each species using the function linear_regression_by_species that outputs the summary of this regression analysis after use.
+
+```{r Statistics}
+
+source("functions/statistics.r")
+
+# statistics for Gentoo penguins
+
+Gentoo_correlation_result <- correlation_test_by_species(Gentoo_dataset, "species", "Gentoo penguin (Pygoscelis papua)", "culmen_length_mm", "culmen_depth_mm")
+
+Gentoo_regression_result <- linear_regression_by_species(Gentoo_dataset, "species", "Gentoo penguin (Pygoscelis papua)", "culmen_length_mm", "culmen_depth_mm")
+
+
+# statistics for Adelie penguins
+
+Adelie_correlation_result <- correlation_test_by_species(Adelie_dataset, "species", "Adelie Penguin (Pygoscelis adeliae)", "culmen_length_mm", "culmen_depth_mm")
+
+Adelie_regression_result <- linear_regression_by_species(Adelie_dataset, "species", "Adelie Penguin (Pygoscelis adeliae)", "culmen_length_mm", "culmen_depth_mm")
+
+
+# statistics for Chinstrap penguins
+
+Chinstrap_correlation_result <- correlation_test_by_species(Chinstrap_dataset, "species", "Chinstrap penguin (Pygoscelis antarctica)", "culmen_length_mm", "culmen_depth_mm")
+
+Chinstrap_regression_result <- linear_regression_by_species(Chinstrap_dataset, "species", "Chinstrap penguin (Pygoscelis antarctica)", "culmen_length_mm", "culmen_depth_mm")
+
+
+```
+
+### Create and save results figures
+
+# I use the function lm_create_scatter_plot() to produce a graph for each individual species. The resulting figures show the scatter plot spread of data, as well as having the regression line with a 95% confidence interval added over the top of it. Additionally, the function plots these graphs with vital information from the regression analysis such as the p-value (p) and the R squared value (R).
+
+# After the creation of each figure, I once again use my save_ggplot() function to save the individual species graphs to my figures folder.
+
+# My original question as to whether there was a statistically significant correlation between culmen length and culmen depth was addressed to each of these individual species. For this reason, I thought it would be appropriate to construct a facetting function that could take inputs of other graphs and combine these together to be viewed in one figure. I did this with each of the previously created individual species plots to produce a combined plot that shows the differences in data spread and statistical results.
+
+# Once again I use my save_ggplot function to copy this figure in pdf format to my figures folder.
+
+```{r Plotting Results}
+
+source("functions/illustration.r")
+
+
+Adelie_plot <- lm_create_scatter_plot(Adelie_dataset, "culmen_length_mm", "culmen_depth_mm", 
+                    "Adelie", 
+                    "Culmen Length (mm)", "Culmen Depth (mm)",
+                    point_size = 1)
+
+
+Gentoo_plot <- lm_create_scatter_plot(Gentoo_dataset, "culmen_length_mm", "culmen_depth_mm", 
+                    "Gentoo", 
+                    "Culmen Length (mm)", "Culmen Depth (mm)",
+                    point_size = 1)
+
+Chinstrap_plot <- lm_create_scatter_plot(Chinstrap_dataset, "culmen_length_mm", "culmen_depth_mm", 
+                    "Chinstrap", 
+                    "Culmen Length (mm)", "Culmen Depth (mm)",
+                    point_size = 1)
+
+
+
+combined_species_plot <- combine_and_facet_plots(list(Gentoo_plot, Chinstrap_plot, Adelie_plot), facet_labels = NULL, "Scatter plots of Culmen Length (mm) vs Culmen Depth (mm) by species")
+
+
+```  
+```{r}
+save_ggplot(Adelie_plot, "Adelie_plot.pdf", "figures/")
+save_ggplot(Gentoo_plot, "Gentoo_plot.pdf", "figures/")
+save_ggplot(Chinstrap_plot, "Chinstrap_plot.pdf", "figures/")
+save_ggplot(combined_species_plot, "combined_species_plot.pdf", "figures/")
+
+```
+
+
+
+### Results & Discussion
+
+# Starting with the results of the Pearson's product-moment correlation analyses, it is clear that there is a widely conserved positive correlation between culmen length and culmen depth across all three penguin species. Gentoo (~0.64), Adelie (~0.39) and Chinstrap (~0.65). It is clear however that the strongest correlations were seen in both Gentoo and Chinstrap penguins whereas the Adelie's is noticeably lower.
+
+# Following this with the linear regression analysis, whereby the predictive capacity of culmen length on culmen depth was analysed as well as the efficacy in explaining the variation it was found that only Gentoo penguins possessed a statistically significant p-value (p = 7.337e-16, a = 0.05). In comparison, both Adelie and Chinstrap didn't demonstrate statistical significance (p = 1.515e-06, p = 1.526e-09). Despite this, all three species possessed high values for R squared: Gentoo (0.414), Adelie (0.153) and Chinstrap (0.427). 
+
+# In terms of what this could mean for the relationship between culmen length and culmen depth, I can only state confidently that there exists a statistically significant correlation between culmen length and culmen depth within the Gentoo species. This would potentially suggest that these morphological variables covary significantly within the Gentoo species moreso than others indiciating the possibility of a selective pressure selecting for this relationship potentially for adaptive reasons as beak morphology will have significant implications for niche (Petalas et al, 2021).
+
+# Considering the adjusted R squared values, it is clear that culmen length explains a large amount of the variation in culmen depth within the Chinstrap and Gentoo penguins. This would suggest that perhaps the Chinstrap penguin species has experienced the same selective pressure to enforce this relationship, but due to having an insignificant p-value can't be considered conclusive. Interestingly the Adelie species lacked both a significant p-value (1.515e-06) and a higher R squared value (0.153) as well as having a noticeably lower correlation (~0.39). This could suggest that the Adelie species lacks any significant form of correlation between culmen length and culmen depth implying potentially different selective pressures or covariates are dictating Adelie bill morphology than is possibly the case with Gentoo and Chinstrap and serves as a potential future area of research.
+
+
+### Conclusion
+
+# In conclusion I believe these results demonstrate that there is a statistically significant correlation between culmen length and culemn depth within the Gentoo penguin species (p = 7.337e-16, p<0.05) and that culmen length explained ~ 41% of the variation in culmen depth. Hence the null hypothesis could be rejected for Gentoo, however in the cases of Chinstrap and Adelie neither had statistically significant correlations (p>0.05) hence in their cases I fail to reject the null hypothesis. For this reason I conclude that only within the Gentoo penguin, (Pygoscelis papua), is there a statistically significant correlation between culmen length and culmen depth.
+
+# Future work could look to test this relationship across a wider variety of penguin species as well as potentially identify and test the influence of covariates on these variables that better explain the varitation seen here. In addition, the potential ecological implications of this correlation could be interrogated with respect to feeding for example, as this has often dictated bill morphology in other types of island birds such as the Galapogas Finches (De León et al, 2014).
+
+
+### Paper references
+
+Petalas, Christina et al. “Foraging Niche Partitioning in Sympatric Seabird Populations.” Scientific reports 11.1 (2021): 2493–12. Web.
+
+De León, L. F. et al. “Darwin’s Finches and Their Diet Niches: The Sympatric Coexistence of Imperfect Generalists.” (2014): n. pag. Web. 
+
+### Package references
+
+## ggplot2:
+# H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.
+
+## palmerpenguins:
+# Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R
+  package version 0.1.0. https://allisonhorst.github.io/palmerpenguins/. doi: 10.5281/zenodo.3960218.
+  
+## janitor:
+# Firke S (2023). _janitor: Simple Tools for Examining and Cleaning Dirty Data_. R package version 2.2.0,
+  <https://CRAN.R-project.org/package=janitor>.
+  
+## dplyr:
+# Wickham H, François R, Henry L, Müller K, Vaughan D (2023). _dplyr: A Grammar of Data Manipulation_. R
+  package version 1.1.3, <https://CRAN.R-project.org/package=dplyr>.
+
+## cowplot:
+# Wilke C (2020). _cowplot: Streamlined Plot Theme and Plot Annotations for 'ggplot2'_. R package version
+  1.1.1, <https://CRAN.R-project.org/package=cowplot>.
+
